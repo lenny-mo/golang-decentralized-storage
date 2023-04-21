@@ -1,2 +1,6 @@
 # golang-decentralized-storage
-Implement MIT6.824 experiment
+
+## Using mysql to sotre data 
+
+
+## Using ceph to store data
