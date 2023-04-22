@@ -1,8 +1,8 @@
-// Description: 工具类
-// Date: 2017-12-28 15:00:00
+// this file is used to calculate something about crypto
 package util
 
 import (
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"hash"
@@ -36,7 +36,7 @@ func GetFileSize(filename string) int64 {
 	return result
 }
 
-// FileSha1: 计算文件的sha1值
+// FileSha1 create a sha1 hash with given file
 func FileSha1(file *os.File) string {
 	_sha1 := sha1.New()                       // 创建sha1对象
 	io.Copy(_sha1, file)                      // 将file -> _sha1
@@ -48,4 +48,12 @@ func Sha1(str string) string {
 	_sha1 := sha1.New()
 	_sha1.Write([]byte(str))
 	return hex.EncodeToString(_sha1.Sum(nil))
+}
+
+// MD5 create a md5 hash with given string,
+// you should know that MD5  is not secure enough compared with SHA1
+func MD5(str string) string {
+	_md5 := md5.New()
+	_md5.Write([]byte(str))
+	return hex.EncodeToString(_md5.Sum(nil))
 }
