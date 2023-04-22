@@ -10,7 +10,7 @@ import (
 
 func main() {
 	fmt.Println("main")
-	// 使用http.HandleFunc()函数注册路由
+
 	http.HandleFunc("/file/upload", handler.UploadHandler)
 
 	http.HandleFunc("/file/upload/suc", handler.UploadSuccessHandler)
@@ -22,6 +22,8 @@ func main() {
 	http.HandleFunc("/file/update", handler.FileMetaUpdateHandler)
 
 	http.HandleFunc("/file/delete", handler.FileDeleteHandler)
+
+	http.HandleFunc("/user/signup", handler.SignUpHandler)
 
 	fmt.Println("Start server at 8080")
 	err := http.ListenAndServe(":8080", nil)
