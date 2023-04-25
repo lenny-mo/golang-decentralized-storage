@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"fileserver/fileserver/orm"
 	"fmt"
 	"os"
 
@@ -42,4 +43,28 @@ func init() {
 func GetDBConnection() *sql.DB {
 	// if db is nil, then print error message and exit
 	return db
+}
+
+// ParseRows parse the rows to file meta data
+func ParseUserRows(rows *sql.Rows) ([]*orm.UserInfo, error) {
+	// create a slice to store the file meta data
+	userinfo := make([]*orm.UserInfo, 0)
+
+	// iterate the rows
+	for rows.Next() {
+		// create a user info struct
+		u := &orm.UserInfo{}
+
+		// scan the row and store the data to file meta data
+		err := rows.Scan(&u.UserName, &u.UserPwd)
+		if err != nil {
+			fmt.Println("Failed to scan row, err: " + err.Error())
+			return nil, err
+		}
+
+		// append the file meta data to the slice
+		userinfo = append(userinfo, u)
+	}
+
+	return userinfo, nil
 }

@@ -1,18 +1,11 @@
 package db
 
 import (
-	"database/sql"
 	"errors"
 	"fileserver/fileserver/db/mysql"
+	"fileserver/fileserver/orm"
 	"fmt"
 )
-
-type Table struct {
-	FileHash string
-	FileName sql.NullString
-	FileSize sql.NullInt64
-	FileAddr sql.NullString
-}
 
 // FileUploadFinished when file upload finished, insert file info into mysql
 func FileUploadFinished(filehash string, filename string,
@@ -61,7 +54,7 @@ func FileUploadFinished(filehash string, filename string,
 }
 
 // GetFileMeta get a file meta data from db
-func GetFileMeta(filehash string) (*Table, error) {
+func GetFileMeta(filehash string) (*orm.FileInfo, error) {
 	// connect to db and use prepare statement to fetch a file meta data
 	dbConnect := mysql.GetDBConnection()
 	if dbConnect == nil {
@@ -80,7 +73,7 @@ func GetFileMeta(filehash string) (*Table, error) {
 	defer stmt.Close()
 
 	// create a table to store the file meta data
-	t := Table{}
+	t := orm.FileInfo{}
 	// use QueryRow to fetch a row, if the file is not found, return nil
 	err = stmt.QueryRow(filehash).Scan(&t.FileHash, &t.FileName, &t.FileSize, &t.FileAddr)
 	if err != nil {
