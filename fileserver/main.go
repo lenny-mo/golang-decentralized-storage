@@ -25,6 +25,8 @@ func main() {
 
 	http.HandleFunc("/user/signup", handler.SignUpHandler)
 
+	http.HandleFunc("/user/signin", handler.SignInHandler)
+
 	fmt.Println("Start server at 8080")
 	err := http.ListenAndServe(":8080", nil)
 
