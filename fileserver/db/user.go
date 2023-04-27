@@ -47,6 +47,7 @@ func UserSignin(username string, encpwd string) bool {
 	defer stmt.Close() // close the statement after use
 
 	rows, err := stmt.Query(username)
+	// check if the query is successful
 	if err != nil {
 		fmt.Println("Failed to query statement, err: " + err.Error())
 		return false
@@ -72,9 +73,12 @@ func UserSignin(username string, encpwd string) bool {
 func UpdateToken(username, token string) bool {
 	// connect to db and using db to prepare statement
 	// the prepare statement can be executed multiple times
+	// use replace since we want to update the token if the user has signed in before
+	// if there is a token before, it will be replaced with the new token
 	stmt, err := mysql.GetDBConnection().Prepare("replace into tbl_user_token (`user_name`, `user_token`)" +
 		" values (?, ?)")
 
+	// if replace failed, return false
 	if err != nil {
 		fmt.Println("Failed to prepare statement, err: " + err.Error())
 		return false
@@ -84,12 +88,15 @@ func UpdateToken(username, token string) bool {
 	defer stmt.Close()
 
 	// execute the statement
-	_, err = stmt.Exec(username, token)
+	sqlresult, err := stmt.Exec(username, token)
 
 	if err != nil {
 		fmt.Println("Failed to exec statement, err: " + err.Error())
 		return false
 	}
+
+	// this result will show you how many rows are affected if successful
+	fmt.Println("sqlresult: ", sqlresult)
 
 	// if the statement is executed successfully, return trued
 	return true
