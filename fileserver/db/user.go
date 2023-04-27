@@ -1,4 +1,4 @@
-// this file is used to store user info and interacts with the user info in database
+// this file is used to store and get user info, and interacts with the user info in database
 package db
 
 import (
@@ -101,3 +101,5 @@ func UpdateToken(username, token string) bool {
 	// if the statement is executed successfully, return trued
 	return true
 }
+
+func 

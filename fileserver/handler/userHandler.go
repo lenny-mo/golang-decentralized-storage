@@ -65,11 +65,17 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 // SignInHandler handle user sign in request
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	// if the method is GET, then return the sign in page
-	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/static/view/signin.html", http.StatusFound)
+	if r.Method == http.MethodGet {
+		data, err := ioutil.ReadFile("./static/view/signin.html")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Internal server error" + err.Error()))
+		}
+		w.Write(data)
 		return
 	}
 
+	// if the method is POST, then parse the form data
 	// parse the form data, get the username and password
 	r.ParseForm()
 	username := r.Form.Get("username")
@@ -86,7 +92,39 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// generate a token for the user
 	// if the user exists, generate a token, the token can be used for 1 hour
+	token := genearteToken(username)
+	// store the token into database
+	ok = db.UpdateToken(username, token)
+
+	if !ok {
+		//
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed to update token"))
+		return
+	}
+	// if sign in success, redirect to home page and allow user to upload file
+	// w.Write([]byte("http://" + r.Host + "/static/view/home.html?token=" + token))
+	response := util.ResponseMessage{
+		Code:    0,
+		Message: "Sign in success",
+		Data: struct {
+			FileLocation string
+			Username     string
+			Token        string
+		}{
+			FileLocation: "http://" + r.Host + "/static/view/home.html",
+			Username:     username,
+			Token:        token,
+		},
+	}
+
+	w.Write(response.JSON2Bytes())
+
+}
+
+func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
@@ -105,13 +143,14 @@ func generateSalt(length int) string {
 }
 
 // generateToken generate a token for the user,
-// the length of the token is 64
-// TODO: the length of token should be 64
+// the length of the token is 40
+// TODO: the length of token should be 40
 func genearteToken(username string) string {
 	timeStamp := fmt.Sprintf("%x", time.Now().Unix())
 	fmt.Println("timestamp of the user", timeStamp)
 
+	// the length of tokenPrefix is 32
 	tokenPrefix := util.MD5(username + timeStamp + token_salt)
 
-	return tokenPrefix + "_" + timeStamp[:8]
+	return tokenPrefix + timeStamp[:8]
 }
