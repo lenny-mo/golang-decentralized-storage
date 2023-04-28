@@ -40,41 +40,44 @@
                 <strong>Username: </strong>
                 <span id="username"></span>
             </div>
-
             <div class="detail">
-                <strong>Email Address: </strong>
-                <span id="email"></span>
-            </div>
-
-            <div class="detail">
-                <strong>Login Time: </strong>
-                <span id="login-time"></span>
+                <strong>Token: </strong>
+                <span id="token"></span>
             </div>
         </div>
     </div>
 
     <script>
-        function fetchData() {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve({
-                        username: 'JohnDoe',
-                        email: 'john.doe@example.com',
-                        loginTime: '2023-04-28 12:34:56'
-                    });
-                }, 1000);
-            });
+        function getCookie(name) {
+        const nameWithEqualSign = name + "=";
+        const cookiesArray = document.cookie.split(';');
+        
+        for (let i = 0; i < cookiesArray.length; i++) {
+            let cookie = cookiesArray[i].trim();
+            console.log('Current cookie:', cookie); // Add this line for debugging
+            if (cookie.startsWith(nameWithEqualSign)) {
+            return cookie.substring(nameWithEqualSign.length);
+            }
+        }
+        return '';
         }
 
-        async function displayUserData() {
-            const data = await fetchData();
+        function displayUserData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get("username");
+        const token = urlParams.get("token");
 
-            document.getElementById('username').textContent = data.username;
-            document.getElementById('email').textContent = data.email;
-            document.getElementById('login-time').textContent = data.loginTime;
+        if (username && token) {
+            document.getElementById("username").textContent = username;
+            document.getElementById("token").textContent = token;
+        } else {
+            alert("User info not found. Please log in again.");
+        }
         }
 
+    
         displayUserData();
     </script>
+    
 </body>
 </html>

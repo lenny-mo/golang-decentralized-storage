@@ -9,14 +9,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 )
 
 var (
 	// password_salt is a random string used to be added in the password
-	password_salt = generateSalt(16)
+	// password_salt = generateSalt(16)
+	password_salt = "1234567890123456"
 	// token_salt is a random string used to be added in the token
-	token_salt = generateSalt(16)
+	// token_salt = generateSalt(16)
+	token_salt = "1234567890123456"
 )
 
 // SignUpHandler handle user sign up request
@@ -36,21 +39,21 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	// if the method is not GET, then it must be POST
 	// parse the userdata from form
-	// TODO: store email into database
 	r.ParseForm()
 	username := r.Form.Get("username")
 	password := r.Form.Get("password")
+	email := r.Form.Get("email")
 
 	// check if the username and password are correct
 	if len(username) < 3 || len(password) < 6 {
-		w.Write([]byte("Invalid parameter"))
+		w.Write([]byte("Invalid parameter, your username should be at least 3 characters and your password should be at least 6 characters"))
 		return
 	}
 
 	// encrypt the password with salt
 	encodePassword := util.Sha1(password + password_salt)
 	// insert user info into mysql
-	ok := db.UserSignUp(username, encodePassword)
+	ok := db.UserSignUp(username, encodePassword, email)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Failed to write into database"))
@@ -104,28 +107,48 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Failed to update token"))
 		return
 	}
-	// if sign in success, redirect to home page and allow user to upload file
-	// w.Write([]byte("http://" + r.Host + "/static/view/home.html?token=" + token))
-	response := util.ResponseMessage{
-		Code:    0,
-		Message: "Sign in success",
-		Data: struct {
-			FileLocation string
-			Username     string
-			Token        string
-		}{
-			FileLocation: "http://" + r.Host + "/static/view/home.html",
-			Username:     username,
-			Token:        token,
-		},
-	}
 
-	w.Write(response.JSON2Bytes())
+	queryParameters := fmt.Sprintf("?username=%s&token=%s", url.QueryEscape(username), url.QueryEscape(token))
+	http.Redirect(w, r, "/static/view/home.html"+queryParameters, http.StatusSeeOther)
 
 }
 
+// UserInfoHandler get the user info from the database
 func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
+	// parse the form data from the request
+	r.ParseForm()
+	username := r.Form.Get("username")
+	token := r.Form.Get("token")
 
+	// check if the token is valid, eg. token is not expired
+	isValid := isValid(token, username)
+
+	// check if the user info is correct, if not, return 403
+	if !isValid {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Failed to get user info"))
+		return
+	}
+
+	// get the user info from the database
+	userinfo, err := db.GetUserInfo(username)
+
+	// if failed to get user info, return 403
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Failed to get user info"))
+		return
+	}
+
+	// if success, return the user info
+	response := util.ResponseMessage{
+		Code:    0,
+		Message: "Get user info success",
+		Data:    userinfo,
+	}
+
+	// write the response to the client
+	w.Write(response.JSON2Bytes())
 }
 
 // genearteSalt generate a random salt
@@ -144,7 +167,6 @@ func generateSalt(length int) string {
 
 // generateToken generate a token for the user,
 // the length of the token is 40
-// TODO: the length of token should be 40
 func genearteToken(username string) string {
 	timeStamp := fmt.Sprintf("%x", time.Now().Unix())
 	fmt.Println("timestamp of the user", timeStamp)
@@ -153,4 +175,14 @@ func genearteToken(username string) string {
 	tokenPrefix := util.MD5(username + timeStamp + token_salt)
 
 	return tokenPrefix + timeStamp[:8]
+}
+
+// TODO: complete this function
+func isValid(token, username string) bool {
+	// check if the token is expired in the database
+	// check the time stamp of the token,
+	// if the token is expired return false
+	return len(token) == 40
+
+	// fetch the token from the database and compare these two tokens are the same
 }
