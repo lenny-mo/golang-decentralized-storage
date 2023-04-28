@@ -3,14 +3,17 @@ package db
 
 import (
 	"fileserver/fileserver/db/mysql"
+	"fileserver/fileserver/orm"
 	"fmt"
 )
 
 // UserSignUp sign up a user and insert into table
-func UserSignUp(username string, password string) bool {
+// XXX: user insert
+func UserSignUp(username, password, email string) bool {
 	// use prepare statement to avoid sql injection, and use ignore to avoid duplicate
-	stmt, err := mysql.GetDBConnection().Prepare("insert ignore into tbl_user (`user_name`, `user_pwd`)" +
-		" values (?, ?)")
+	// only prevents insertion of rows that would cause a duplicate key value in a unique index or primary key
+	stmt, err := mysql.GetDBConnection().Prepare("insert ignore into tbl_user (`user_name`, `user_pwd`, `email`)" +
+		" values (?, ?, ?)")
 	if err != nil {
 		fmt.Println("Failed to prepare statement, err: " + err.Error())
 		return false
@@ -18,17 +21,20 @@ func UserSignUp(username string, password string) bool {
 
 	defer stmt.Close()
 
-	res, err := stmt.Exec(username, password)
+	res, err := stmt.Exec(username, password, email)
 	if err != nil {
 		fmt.Println("Failed to exec statement, err: " + err.Error())
 		return false
 	}
 	// check if the user has been signed up before
+	// if the user signed up before, the rows affected should be 0
 	if rf, err := res.RowsAffected(); err == nil {
 		if rf <= 0 {
+			fmt.Println("rows affected is: ", rf)
 			fmt.Println("User: " + username + " has been signed up before")
 			return false
 		}
+		fmt.Println("rows affected is: ", rf)
 	}
 
 	return true
@@ -57,16 +63,18 @@ func UserSignin(username string, encpwd string) bool {
 	//check if the user exists
 	if !rows.Next() {
 		fmt.Println("Username:", username, "does not exist")
+		return false
 	}
 
 	// parse the rows
 	pRows, _ := mysql.ParseUserRows(rows)
 
 	if len(pRows) > 0 && pRows[0].UserPwd.Valid {
+		fmt.Println("User password is: ", pRows[0].UserPwd.String)
 		return pRows[0].UserPwd.String == encpwd
 	}
 
-	return false
+	return true
 }
 
 // UpdateToken update user token into db
@@ -75,7 +83,7 @@ func UpdateToken(username, token string) bool {
 	// the prepare statement can be executed multiple times
 	// use replace since we want to update the token if the user has signed in before
 	// if there is a token before, it will be replaced with the new token
-	stmt, err := mysql.GetDBConnection().Prepare("replace into tbl_user_token (`user_name`, `user_token`)" +
+	stmt, err := mysql.GetDBConnection().Prepare("replace into user_token (`user_name`, `user_token`)" +
 		" values (?, ?)")
 
 	// if replace failed, return false
@@ -102,4 +110,33 @@ func UpdateToken(username, token string) bool {
 	return true
 }
 
-func 
+// GetUserInfo get user info from db
+func GetUserInfo(username string) (*orm.UserInfo, error) {
+	// using prepare statement to run sql query
+	stmt, err := mysql.GetDBConnection().Prepare("select user_name," +
+		" email," +
+		" phone," +
+		" signup_at," +
+		" last_active," +
+		" profile," +
+		" status" +
+		" from tbl_user where user_name=? limit 1")
+
+	if err != nil {
+		fmt.Println("Failed to prepare statement, err: " + err.Error())
+		return nil, err
+	}
+
+	defer stmt.Close() // close the statement after use
+
+	//
+	u := orm.UserInfo{}
+	err = stmt.QueryRow(username).Scan(&u.UserName, &u.Email, &u.Phone, &u.SignupAt, &u.LastActive, &u.Profile, &u.Status)
+
+	if err != nil {
+		fmt.Println("Failed to query statement, err: " + err.Error())
+		return &u, err
+	}
+
+	return &u, nil
+}
