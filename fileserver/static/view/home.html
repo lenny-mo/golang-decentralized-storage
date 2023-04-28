@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Homepage</title>
+    <style>
+        body {
+            background-color: #15202b;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #38444d;
+        }
+
+        .user-details {
+            margin-top: 50px;
+        }
+
+        .detail {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to the Homepage</h1>
+        </div>
+
+        <div class="user-details">
+            <div class="detail">
+                <strong>Username: </strong>
+                <span id="username"></span>
+            </div>
+
+            <div class="detail">
+                <strong>Email Address: </strong>
+                <span id="email"></span>
+            </div>
+
+            <div class="detail">
+                <strong>Login Time: </strong>
+                <span id="login-time"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fetchData() {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve({
+                        username: 'JohnDoe',
+                        email: 'john.doe@example.com',
+                        loginTime: '2023-04-28 12:34:56'
+                    });
+                }, 1000);
+            });
+        }
+
+        async function displayUserData() {
+            const data = await fetchData();
+
+            document.getElementById('username').textContent = data.username;
+            document.getElementById('email').textContent = data.email;
+            document.getElementById('login-time').textContent = data.loginTime;
+        }
+
+        displayUserData();
+    </script>
+</body>
+</html>
