@@ -1,92 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Homepage</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl5/5fDgVerY9Ns5D3e3zzcrGQwz2IDxDFQdBfD5/T" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-cn7l7gDp0eyniUwwAZgrzD06kc/tftFf19TOAs2zVinnD/C7E91j9yyk5//jjpt/" crossorigin="anonymous"></script>
     <style>
         body {
-            background-color: #15202b;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
+            background-color: #15202B;
+            color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
         }
-
         .container {
-            width: 80%;
-            margin: auto;
-        }
-
-        .header {
-            text-align: center;
-            padding: 20px;
-            border-bottom: 1px solid #38444d;
-        }
-
-        .user-details {
+            max-width: 600px;
             margin-top: 50px;
+            background-color: #1B2936;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-
-        .detail {
+        h1 {
+            font-weight: bold;
             margin-bottom: 20px;
+            color: #FFFFFF;
+        }
+        p {
+            color: #FFFFFF;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Welcome to the Homepage</h1>
-        </div>
-
-        <div class="user-details">
-            <div class="detail">
-                <strong>Username: </strong>
-                <span id="username"></span>
-            </div>
-            <div class="detail">
-                <strong>Token: </strong>
-                <span id="token"></span>
-            </div>
-        </div>
-
-        <!-- Add a button to trigger the redirectToUpload function -->
-        <button onclick="redirectToUpload()">Upload File</button>
+        <h1>Welcome, {{.Username}}!</h1>
+        <p>Your token: {{.Token}}</p>
+        <a href="/file/upload" class="btn btn-primary">Upload a File</a>
     </div>
-
-    <script>
-        function getCookie(name) {
-            const nameWithEqualSign = name + "=";
-            const cookiesArray = document.cookie.split(';');
-            
-            for (let i = 0; i < cookiesArray.length; i++) {
-                let cookie = cookiesArray[i].trim();
-                console.log('Current cookie:', cookie); // Add this line for debugging
-                if (cookie.startsWith(nameWithEqualSign)) {
-                    return cookie.substring(nameWithEqualSign.length);
-                }
-            }
-            return '';
-        }
-
-        function displayUserData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const username = urlParams.get("username");
-            const token = urlParams.get("token");
-
-            if (username && token) {
-                document.getElementById("username").textContent = username;
-                document.getElementById("token").textContent = token;
-            } else {
-                alert("User info not found. Please log in again.");
-            }
-        }
-
-        function redirectToUpload() {
-            const username = document.getElementById("username").textContent;
-            const token = document.getElementById("token").textContent;
-            const url = `/file/upload?username=${username}&token=${token}`;
-            window.location.href = url;
-        }
-    
-        displayUserData();
-    </script>
-    
 </body>
 </html>

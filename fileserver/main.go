@@ -13,11 +13,12 @@ func main() {
 
 	http.HandleFunc("/file/upload", handler.SessionAuthInterceptor(handler.UploadHandler))
 
-	http.HandleFunc("/file/upload/suc", handler.UploadSuccessHandler)
+	// 上传完成会重定向到这个handler，但是之后会修改为重定向到用户的home page
+	http.HandleFunc("/file/upload/suc", handler.SessionAuthInterceptor(handler.UploadSuccessHandler))
 
-	http.HandleFunc("/file/meta", handler.GetFileMetaHandler)
+	http.HandleFunc("/file/meta", handler.SessionAuthInterceptor(handler.GetFileMetaHandler))
 
-	http.HandleFunc("/file/download", handler.DownloadHandler)
+	http.HandleFunc("/file/download", handler.SessionAuthInterceptor(handler.DownloadHandler))
 
 	http.HandleFunc("/file/update", handler.FileMetaUpdateHandler)
 

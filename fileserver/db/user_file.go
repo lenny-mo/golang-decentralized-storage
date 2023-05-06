@@ -4,20 +4,8 @@
 package db
 
 import (
-	"database/sql"
+	"fileserver/fileserver/orm"
 )
-
-// orm object
-type UserFile struct {
-	ID         sql.NullInt32
-	UserName   sql.NullString
-	FileSha1   sql.NullString
-	FileSize   sql.NullInt64
-	FileName   sql.NullString
-	UploadAt   sql.NullTime
-	LastUpdate sql.NullTime
-	Status     sql.NullInt32
-}
 
 // TODO: insert or udpate 存储用户上传的文件元信息进入用户文件表
 func Upload2UserFileDB(username string) bool {
@@ -28,7 +16,7 @@ func Upload2UserFileDB(username string) bool {
 
 // TODO: select 从用户文件表中获取用户文件元信息
 // QueryUserFileMetas: 根据username, limit限制返回的数据条数，返回用户文件元信息
-func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
+func QueryUserFileMetas(username string, limit int) ([]orm.UserFile, error) {
 	// db prepare statment
 	return nil, nil
 }

@@ -16,13 +16,11 @@ var (
 func init() {
 	//最大空闲连接数10，用于加密和解密存储在Redis中的会话数据的秘钥·······
 	var err error
-	fmt.Println("start to connect to redis")
+	//XXX: 存储session的redis和之后分块上传的redis是否应该同一个
 	store, err = redistore.NewRediStore(10, "tcp", "localhost:6379", "", []byte("redis-secret-key"))
 
 	if err != nil {
 		fmt.Println("cannot connect to redis")
-	} else {
-		fmt.Println("successfully connect to redis")
 	}
 }
 

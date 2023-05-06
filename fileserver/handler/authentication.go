@@ -1,4 +1,3 @@
-// this file is to check if the user token is valid
 // 提供身份验证相关的操作
 package handler
 

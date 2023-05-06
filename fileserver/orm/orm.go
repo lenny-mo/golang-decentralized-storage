@@ -23,3 +23,15 @@ type UserInfo struct {
 	Profile    sql.NullString
 	Status     sql.NullInt32
 }
+
+// UserFile is the struct of the table tbl_user_file
+type UserFile struct {
+	ID         sql.NullInt32
+	UserName   sql.NullString
+	FileSha1   sql.NullString
+	FileSize   sql.NullInt64
+	FileName   sql.NullString
+	UploadAt   sql.NullTime
+	LastUpdate sql.NullTime
+	Status     sql.NullInt32
+}

@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 )
@@ -82,19 +81,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// get the user info
 		r.ParseForm()
 		username := r.Form.Get("username")
-		token := r.Form.Get("token")
 
 		//TODO: 上传文件的同时，更新该用户的 tbl_user_file，用户每次上传文件都会更新该表，不管文件是否重复
 		_ = db.Upload2UserFileDB(username)
-		// 对返回的值进行判断，如果true 跳转到home, else 返回错误信息
 
 		//FIXME: 重定向到用户的home页面
-		queryParameters := fmt.Sprintf("?username=%s&token=%s", url.QueryEscape(username), url.QueryEscape(token))
-		http.Redirect(w, r, "/static/view/home.html"+queryParameters, http.StatusSeeOther)
+		// http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
+		http.Redirect(w, r, "/user/info", http.StatusFound)
 	}
-}	
+}
 
-// UploadSuccessHandler 上传完成
+// UploadSuccessHandler this func is deprecated
+// if the user upload file successfully, redirect to home page rather than this
 func UploadSuccessHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Upload successed!")
 }

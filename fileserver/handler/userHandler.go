@@ -8,6 +8,7 @@ import (
 	"fileserver/fileserver/session"
 	"fileserver/fileserver/util"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -109,8 +110,35 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 // TODO: 重定向到home.html, 并且能够显示用户上传的所有文件，也就是查询 tbl_user_file 表
 // UserInfoHandler get the user info from the database, redirect to the home page
 func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
-	// parse the form data from the request
+	// 获取用户的session info
+	username := session.GetSessionUser(r).Username
+	token := session.GetSessionUser(r).Token
 
+	data := struct {
+		Username string
+		Token    string
+	}{
+		Username: username,
+		Token:    token,
+	}
+
+	//TODO: 从数据库中查询用户的 tbl_user_file 表, 并且把用户上传过的所有文件返回给客户端
+
+	t, err := template.ParseFiles("./static/view/home.html")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error" + err.Error()))
+		return
+	}
+
+	// Render the template with the user data
+	err = t.Execute(w, data)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error" + err.Error()))
+		return
+	}
 }
 
 // genearteSalt generate a random salt
