@@ -4,12 +4,32 @@
 package db
 
 import (
+	"fileserver/fileserver/db/mysql"
 	"fileserver/fileserver/orm"
+	"fmt"
 )
 
 // TODO: insert or udpate 存储用户上传的文件元信息进入用户文件表
-func Upload2UserFileDB(username string) bool {
+func Upload2UserFileDB(userfile *orm.UserFile) bool {
 	// db prepare statment
+	stmt, err := mysql.GetDBConnection().Prepare(
+		"insert ignore into tbl_user_file(`user_name`, `file_sha1`, `file_size`, `file_name`) values(?,?,?,?)")
+	if err != nil {
+		fmt.Println("Failed to prepare statement, err: ", err.Error())
+		return false
+	}
+	defer stmt.Close()
+
+	// execute sql
+	_, err = stmt.Exec(userfile.UserName.String,
+		userfile.FileSha1.String,
+		userfile.FileSize.Int64,
+		userfile.FileName.String)
+
+	if err != nil {
+		fmt.Println("Failed to exec statement, err: ", err.Error())
+		return false
+	}
 
 	return true
 }

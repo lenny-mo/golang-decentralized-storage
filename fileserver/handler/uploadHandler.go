@@ -2,9 +2,11 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fileserver/fileserver/db"
 	"fileserver/fileserver/meta"
+	"fileserver/fileserver/orm"
 	"fileserver/fileserver/util"
 	"fmt"
 	"io"
@@ -78,14 +80,19 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// update filemeta into tbl_file database
 		_ = meta.UpdateFileMetaDB(&filemeta)
 
-		// get the user info
+		// get the user and file info to update tbl_user_file
 		r.ParseForm()
 		username := r.Form.Get("username")
 
-		//TODO: 上传文件的同时，更新该用户的 tbl_user_file，用户每次上传文件都会更新该表，不管文件是否重复
-		_ = db.Upload2UserFileDB(username)
+		u := &orm.UserFile{UserName: sql.NullString{String: username, Valid: true}}
+		u.FileSha1 = sql.NullString{String: filemeta.FileSha1, Valid: true}
+		u.FileName = sql.NullString{String: filemeta.FileName, Valid: true}
+		u.FileSize = sql.NullInt64{Int64: filemeta.FileSize, Valid: true}
 
-		//FIXME: 重定向到用户的home页面
+		// 上传文件的同时，更新该用户的 tbl_user_file，用户每次上传文件都会更新该表，不管文件是否重复
+		_ = db.Upload2UserFileDB(u)
+
+		// 重定向到用户的home页面
 		// http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
 		http.Redirect(w, r, "/user/info", http.StatusFound)
 	}
@@ -154,7 +161,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// FileMetaUpdateHandler: 更新元文件名
+// FileMetaUpdateHandler:
 func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	// 解析请求参数
 	r.ParseForm()

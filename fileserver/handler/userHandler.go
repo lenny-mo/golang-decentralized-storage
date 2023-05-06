@@ -110,6 +110,13 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 // TODO: 重定向到home.html, 并且能够显示用户上传的所有文件，也就是查询 tbl_user_file 表
 // UserInfoHandler get the user info from the database, redirect to the home page
 func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
+	// 判断是否是GET请求，如果不是GET请求，那么就返回404
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("404 Not Found"))
+		return
+	}
+
 	// 获取用户的session info
 	username := session.GetSessionUser(r).Username
 	token := session.GetSessionUser(r).Token
