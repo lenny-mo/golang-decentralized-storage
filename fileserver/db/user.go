@@ -8,7 +8,7 @@ import (
 )
 
 // UserSignUp sign up a user and insert into table
-// XXX: user insert
+// 这个包谷
 func UserSignUp(username, password, email string) bool {
 	// use prepare statement to avoid sql injection, and use ignore to avoid duplicate
 	// only prevents insertion of rows that would cause a duplicate key value in a unique index or primary key
@@ -83,8 +83,9 @@ func UpdateToken(username, token string) bool {
 	// the prepare statement can be executed multiple times
 	// use replace since we want to update the token if the user has signed in before
 	// if there is a token before, it will be replaced with the new token
-	stmt, err := mysql.GetDBConnection().Prepare("replace into user_token (`user_name`, `user_token`)" +
-		" values (?, ?)")
+	// we must update token with an expired time, such as 1 hour
+	stmt, err := mysql.GetDBConnection().Prepare("replace into user_token (`user_name`, `token`, `expires_at`)" +
+		" values (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))")
 
 	// if replace failed, return false
 	if err != nil {
@@ -96,15 +97,12 @@ func UpdateToken(username, token string) bool {
 	defer stmt.Close()
 
 	// execute the statement
-	sqlresult, err := stmt.Exec(username, token)
+	_, err = stmt.Exec(username, token)
 
 	if err != nil {
 		fmt.Println("Failed to exec statement, err: " + err.Error())
 		return false
 	}
-
-	// this result will show you how many rows are affected if successful
-	fmt.Println("sqlresult: ", sqlresult)
 
 	// if the statement is executed successfully, return trued
 	return true

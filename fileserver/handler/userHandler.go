@@ -5,11 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fileserver/fileserver/db"
+	"fileserver/fileserver/session"
 	"fileserver/fileserver/util"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -98,57 +98,19 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	// generate a token for the user
 	// if the user exists, generate a token, the token can be used for 1 hour
 	token := genearteToken(username)
-	// store the token into database
-	ok = db.UpdateToken(username, token)
+	// store the token into redis
+	user := session.UserSession{Username: username, Token: token}
+	session.SaveSessionUser(w, r, &user)
 
-	if !ok {
-		//
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Failed to update token"))
-		return
-	}
-
-	queryParameters := fmt.Sprintf("?username=%s&token=%s", url.QueryEscape(username), url.QueryEscape(token))
-	http.Redirect(w, r, "/static/view/home.html"+queryParameters, http.StatusSeeOther)
-
+	// 重定向到file/upload
+	http.Redirect(w, r, "/file/upload", http.StatusFound)
 }
 
-// UserInfoHandler get the user info from the database
+// TODO: 重定向到home.html, 并且能够显示用户上传的所有文件，也就是查询 tbl_user_file 表
+// UserInfoHandler get the user info from the database, redirect to the home page
 func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	// parse the form data from the request
-	r.ParseForm()
-	username := r.Form.Get("username")
-	token := r.Form.Get("token")
 
-	// check if the token is valid, eg. token is not expired
-	isValid := isValid(token, username)
-
-	// check if the user info is correct, if not, return 403
-	if !isValid {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Failed to get user info"))
-		return
-	}
-
-	// get the user info from the database
-	userinfo, err := db.GetUserInfo(username)
-
-	// if failed to get user info, return 403
-	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Failed to get user info"))
-		return
-	}
-
-	// if success, return the user info
-	response := util.ResponseMessage{
-		Code:    0,
-		Message: "Get user info success",
-		Data:    userinfo,
-	}
-
-	// write the response to the client
-	w.Write(response.JSON2Bytes())
 }
 
 // genearteSalt generate a random salt
@@ -178,7 +140,7 @@ func genearteToken(username string) string {
 }
 
 // TODO: complete this function
-func isValid(token, username string) bool {
+func IsTokenValid(token, username string) bool {
 	// check if the token is expired in the database
 	// check the time stamp of the token,
 	// if the token is expired return false

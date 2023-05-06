@@ -45,36 +45,45 @@
                 <span id="token"></span>
             </div>
         </div>
+
+        <!-- Add a button to trigger the redirectToUpload function -->
+        <button onclick="redirectToUpload()">Upload File</button>
     </div>
 
     <script>
         function getCookie(name) {
-        const nameWithEqualSign = name + "=";
-        const cookiesArray = document.cookie.split(';');
-        
-        for (let i = 0; i < cookiesArray.length; i++) {
-            let cookie = cookiesArray[i].trim();
-            console.log('Current cookie:', cookie); // Add this line for debugging
-            if (cookie.startsWith(nameWithEqualSign)) {
-            return cookie.substring(nameWithEqualSign.length);
+            const nameWithEqualSign = name + "=";
+            const cookiesArray = document.cookie.split(';');
+            
+            for (let i = 0; i < cookiesArray.length; i++) {
+                let cookie = cookiesArray[i].trim();
+                console.log('Current cookie:', cookie); // Add this line for debugging
+                if (cookie.startsWith(nameWithEqualSign)) {
+                    return cookie.substring(nameWithEqualSign.length);
+                }
             }
-        }
-        return '';
+            return '';
         }
 
         function displayUserData() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get("username");
-        const token = urlParams.get("token");
+            const urlParams = new URLSearchParams(window.location.search);
+            const username = urlParams.get("username");
+            const token = urlParams.get("token");
 
-        if (username && token) {
-            document.getElementById("username").textContent = username;
-            document.getElementById("token").textContent = token;
-        } else {
-            alert("User info not found. Please log in again.");
-        }
+            if (username && token) {
+                document.getElementById("username").textContent = username;
+                document.getElementById("token").textContent = token;
+            } else {
+                alert("User info not found. Please log in again.");
+            }
         }
 
+        function redirectToUpload() {
+            const username = document.getElementById("username").textContent;
+            const token = document.getElementById("token").textContent;
+            const url = `/file/upload?username=${username}&token=${token}`;
+            window.location.href = url;
+        }
     
         displayUserData();
     </script>

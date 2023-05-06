@@ -14,7 +14,12 @@ type FileInfo struct {
 
 // UserInfo is the struct of the table tbl_user
 type UserInfo struct {
-	UserName sql.NullString
-	UserPwd  sql.NullString
-	Email    sql.NullString
+	UserName   sql.NullString
+	UserPwd    sql.NullString
+	Email      sql.NullString
+	Phone      sql.NullString
+	SignupAt   sql.NullTime
+	LastActive sql.NullTime
+	Profile    sql.NullString
+	Status     sql.NullInt32
 }

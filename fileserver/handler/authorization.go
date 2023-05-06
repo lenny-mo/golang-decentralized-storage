@@ -1,6 +1,3 @@
-// this file is to help
+// 提供授权相关的处理函数
 package handler
 
-func HTTPInterseptor() {
-
-}

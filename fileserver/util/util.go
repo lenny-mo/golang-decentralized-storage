@@ -50,10 +50,12 @@ func Sha1(str string) string {
 	return hex.EncodeToString(_sha1.Sum(nil))
 }
 
-// MD5 create a md5 hash with given string,
+// MD5 create a md5 hash with length 32
 // you should know that MD5  is not secure enough compared with SHA1
+// MD5 generate 128bit hash, SHA1 generate 160bit hash
 func MD5(str string) string {
 	_md5 := md5.New()
 	_md5.Write([]byte(str))
+	// convert into hex string
 	return hex.EncodeToString(_md5.Sum(nil))
 }

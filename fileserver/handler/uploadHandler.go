@@ -1,13 +1,16 @@
+// 这个文件的作用是处理文件上传的请求
 package handler
 
 import (
 	"encoding/json"
+	"fileserver/fileserver/db"
 	"fileserver/fileserver/meta"
 	"fileserver/fileserver/util"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -15,16 +18,17 @@ import (
 // UploadHandler: 处理文件上传
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		data, err := ioutil.ReadFile("./static/view/index.html")
+		data, err := os.ReadFile("./static/view/index.html") // 读取整个文件内容
 		if err != nil {
 			io.WriteString(w, "Internal server error")
 			return
 		}
 
-		io.WriteString(w, string(data))
+		io.WriteString(w, string(data)) // 把请求的页面内容写入到w中
 
 	} else if r.Method == "POST" {
-		// file 是一个文件流, head 是文件头包含了文件名
+		// file 该变量保存上传文件的文件流
+		// head 保存了关于文件的元数据，比如文件名、内容类型等。它的类型是*multipart.FileHeader
 		file, head, err := r.FormFile("file")
 
 		if err != nil {
@@ -39,13 +43,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		filemeta := meta.FileMeta{
 			FileName: head.Filename,
 			Location: "./tmp/" + head.Filename,
-			UploadAt: time.Now().Format("2006-01-02 15:04:05"), // 创建时间并且格式化
+			UploadAt: time.Now().Format("2006-01-02 15:04:05"), // 使用称为“Unix 日期”的参考时间来表示所需日期时间字符串的布局
 		}
 
 		// put filemeta into map, 此时map中的filemeta的filesize为0
 		meta.UpdateFileMeta(&filemeta)
 
-		// 创建本地文件接受上传的文件流
+		// 创建本地文件 接受上传的文件流
 		newfile, err := os.Create(filemeta.Location)
 
 		if err != nil {
@@ -57,7 +61,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		defer newfile.Close()
 
 		// 将file -> newfile; file is a source, newfile is a destination
-		// filesize 是从file中读取的字节数
+		// filesize 复制的字节数，已传输文件的大小
 		filemeta.FileSize, err = io.Copy(newfile, file)
 		if err != nil {
 			fmt.Printf("Fail to save data into file, err:%s\n", err.Error())
@@ -65,19 +69,30 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// 将文件位置从文件开头移动到 0 字节，也就是将文件位置重置为文件的开头。
+		// 将文件指针从文件开头移动到 0 字节，也就是将文件位置重置为文件的开头。
 		newfile.Seek(0, 0)
 		// sha1值是string类型
 		filemeta.FileSha1 = util.FileSha1(newfile)
 		fmt.Println("filemeta.FileSha1: ", filemeta.FileSha1)
-		// 更新filemeta
+		// update filemeta
 		meta.UpdateFileMeta(&filemeta)
-		// update filemeta into database
+		// update filemeta into tbl_file database
 		_ = meta.UpdateFileMetaDB(&filemeta)
 
-		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
+		// get the user info
+		r.ParseForm()
+		username := r.Form.Get("username")
+		token := r.Form.Get("token")
+
+		//TODO: 上传文件的同时，更新该用户的 tbl_user_file，用户每次上传文件都会更新该表，不管文件是否重复
+		_ = db.Upload2UserFileDB(username)
+		// 对返回的值进行判断，如果true 跳转到home, else 返回错误信息
+
+		//FIXME: 重定向到用户的home页面
+		queryParameters := fmt.Sprintf("?username=%s&token=%s", url.QueryEscape(username), url.QueryEscape(token))
+		http.Redirect(w, r, "/static/view/home.html"+queryParameters, http.StatusSeeOther)
 	}
-}
+}	
 
 // UploadSuccessHandler 上传完成
 func UploadSuccessHandler(w http.ResponseWriter, r *http.Request) {
@@ -204,4 +219,37 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 返回200，200表示成功
 	w.WriteHeader(http.StatusOK)
+}
+
+// TODO: 查询批量的用户文件表信息 from tbl_user_file
+// QueryUserFileMetas : 查询批量的用户文件表信息 from tbl_user_file
+func QueryUserFileMetas(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	username := r.Form.Get("username")
+	limit := r.Form.Get("limit")
+
+	fmt.Println("username: ", username, "limit: ", limit)
+	// 根据username和limit查询用户文件表信息, 并且返回给客户端
+}
+
+// TODO: 实现文件的秒传, 从唯一文件表中查询相同的文件hash
+// 1. 如果查询不到记录，返回秒传失败, 需要客户端重新请求上传接口
+// 2. 如果查询到记录，返回成功响应，
+// FastUploadHandler : 实现文件的秒传
+func FastUploadHandler(w http.ResponseWriter, r *http.Request) {
+	// 解析请求参数
+	r.ParseForm()
+	username := r.Form.Get("username")
+	filehash := r.Form.Get("filehash")
+	filename := r.Form.Get("filename")
+	filesize := r.Form.Get("filesize")
+
+	fmt.Println("username: ", username, "filehash: ", filehash, "filename: ", filename, "filesize: ", filesize)
+
+	// 从 唯一文件表中查询相同的文件hash
+
+	// 如果查询不到记录，返回秒传失败, 需要客户端重新请求上传接口
+
+	// 如果查询到记录, 则将文件信息写入到用户文件表中
+
 }

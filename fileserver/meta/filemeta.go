@@ -1,4 +1,5 @@
 // this file is used to store file meta data
+// 和tbl_file中的字段一一对应
 package meta
 
 import (
@@ -21,7 +22,7 @@ var fileMetas map[string]FileMeta // key: 文件的sha1值, value: 文件元信�
 // 创建文件元信息map的互斥锁
 var fileMetasMutex sync.Mutex
 
-// init: 初始化map
+// init: 初始化map 当导入该包时，自动执行
 func init() {
 	// 初始化map
 	fileMetas = make(map[string]FileMeta)
