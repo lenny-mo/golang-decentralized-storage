@@ -29,7 +29,7 @@ func main() {
 	http.HandleFunc("/user/signin", handler.SignInHandler)
 
 	// user home page
-	http.HandleFunc("/user/info", handler.UserInfoHandler)
+	http.HandleFunc("/user/info", handler.SessionAuthInterceptor(handler.UserInfoHandler))
 
 	// TODO: 检验快速上传的router
 	http.HandleFunc("/file/fastupload", handler.FastUploadHandler)

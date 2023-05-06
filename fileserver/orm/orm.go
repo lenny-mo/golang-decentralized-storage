@@ -26,7 +26,6 @@ type UserInfo struct {
 
 // UserFile is the struct of the table tbl_user_file
 type UserFile struct {
-	ID         sql.NullInt32
 	UserName   sql.NullString
 	FileSha1   sql.NullString
 	FileSize   sql.NullInt64

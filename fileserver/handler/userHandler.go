@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fileserver/fileserver/db"
+	"fileserver/fileserver/orm"
 	"fileserver/fileserver/session"
 	"fileserver/fileserver/util"
 	"fmt"
@@ -107,7 +108,6 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/file/upload", http.StatusFound)
 }
 
-// TODO: 重定向到home.html, 并且能够显示用户上传的所有文件，也就是查询 tbl_user_file 表
 // UserInfoHandler get the user info from the database, redirect to the home page
 func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	// 判断是否是GET请求，如果不是GET请求，那么就返回404
@@ -124,13 +124,24 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Username string
 		Token    string
+		UserFile []*orm.UserFile
 	}{
 		Username: username,
 		Token:    token,
+		UserFile: nil,
 	}
 
 	//TODO: 从数据库中查询用户的 tbl_user_file 表, 并且把用户上传过的所有文件返回给客户端
+	res, err := db.QueryUserFileMetas(username, 10)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error" + err.Error()))
+		return
+	}
 
+	// 把查询到的文件信息放到data中
+
+	// 从数据库中查询用户的 tbl_user_file 表, 并且把用户上传过的所有文件返回给客户端
 	t, err := template.ParseFiles("./static/view/home.html")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

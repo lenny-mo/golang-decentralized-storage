@@ -7,6 +7,7 @@ import (
 	"fileserver/fileserver/db"
 	"fileserver/fileserver/meta"
 	"fileserver/fileserver/orm"
+	"fileserver/fileserver/session"
 	"fileserver/fileserver/util"
 	"fmt"
 	"io"
@@ -61,7 +62,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		defer newfile.Close()
 
-		// 将file -> newfile; file is a source, newfile is a destination
 		// filesize 复制的字节数，已传输文件的大小
 		filemeta.FileSize, err = io.Copy(newfile, file)
 		if err != nil {
@@ -72,7 +72,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		// 将文件指针从文件开头移动到 0 字节，也就是将文件位置重置为文件的开头。
 		newfile.Seek(0, 0)
-		// sha1值是string类型
 		filemeta.FileSha1 = util.FileSha1(newfile)
 		fmt.Println("filemeta.FileSha1: ", filemeta.FileSha1)
 		// update filemeta
@@ -81,8 +80,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		_ = meta.UpdateFileMetaDB(&filemeta)
 
 		// get the user and file info to update tbl_user_file
-		r.ParseForm()
-		username := r.Form.Get("username")
+		s := session.GetSessionUser(r)
+		username := s.Username
 
 		u := &orm.UserFile{UserName: sql.NullString{String: username, Valid: true}}
 		u.FileSha1 = sql.NullString{String: filemeta.FileSha1, Valid: true}
@@ -93,7 +92,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		_ = db.Upload2UserFileDB(u)
 
 		// 重定向到用户的home页面
-		// http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
 		http.Redirect(w, r, "/user/info", http.StatusFound)
 	}
 }
