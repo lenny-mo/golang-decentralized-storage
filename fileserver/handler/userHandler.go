@@ -131,7 +131,7 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 		UserFile: nil,
 	}
 
-	//TODO: 从数据库中查询用户的 tbl_user_file 表, 并且把用户上传过的所有文件返回给客户端
+	// 从数据库中查询用户的 tbl_user_file 表, 并且把用户上传过的所有文件返回给客户端
 	res, err := db.QueryUserFileMetas(username, 10)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -139,9 +139,8 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 把查询到的文件信息放到data中
+	data.UserFile = res
 
-	// 从数据库中查询用户的 tbl_user_file 表, 并且把用户上传过的所有文件返回给客户端
 	t, err := template.ParseFiles("./static/view/home.html")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -185,7 +184,7 @@ func genearteToken(username string) string {
 	return tokenPrefix + timeStamp[:8]
 }
 
-// TODO: complete this function
+// TODO: complete this function, 判断用户的token 是否到期
 func IsTokenValid(token, username string) bool {
 	// check if the token is expired in the database
 	// check the time stamp of the token,

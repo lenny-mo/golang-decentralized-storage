@@ -13,12 +13,12 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
         }
         .container {
-            max-width: 600px;
             margin-top: 50px;
             background-color: #1B2936;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            overflow: auto;
         }
         h1 {
             font-weight: bold;
@@ -28,6 +28,14 @@
         p {
             color: #FFFFFF;
         }
+        /* Add these styles for table borders */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid #FFFFFF;
+        }
     </style>
 </head>
 <body>
@@ -35,6 +43,31 @@
         <h1>Welcome, {{.Username}}!</h1>
         <p>Your token: {{.Token}}</p>
         <a href="/file/upload" class="btn btn-primary">Upload a File</a>
+        
+        <!-- Add the table structure here -->
+        <table class="table table-dark table-striped mt-4">
+            <thead>
+                <tr>
+                    <th scope="col">File Name</th>
+                    <th scope="col">File Size</th>
+                    <th scope="col">Upload Time</th>
+                    <th scope="col">LastUpdate Time</th>
+                    <th scope="col">FileSha1</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .UserFile}}
+                <tr>
+                    <td>{{.FileName.String}}</td>
+                    <td>{{.FileSize.Int64}}</td>
+                    <td>{{.UploadAt.Time}}</td>
+                    <td>{{.LastUpdate.Time}}</td>
+                    <td>{{.FileSha1.String}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        <!-- End of the table structure -->
     </div>
 </body>
 </html>
