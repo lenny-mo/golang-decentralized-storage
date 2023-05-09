@@ -2,11 +2,15 @@
 package handler
 
 import (
+	"database/sql"
 	"fileserver/fileserver/cache/redis"
+	"fileserver/fileserver/db"
+	"fileserver/fileserver/orm"
 	"fmt"
 	"math"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"time"
 )
@@ -57,7 +61,8 @@ func InitUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-// TODO: 执行分块上传
+//	执行分块上传
+//
 // 对应的router /file/mpupload/uppart
 func UploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
@@ -70,7 +75,11 @@ func UploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	redisClient := redis.NewRedisClient()
 	defer redis.CloseRedisClient()
 
-	fileHandler, err := os.Create("./tmp/" + uploadID + "/" + chunkIndex)
+	// 创建目录用于存储分块文件并且授予权限
+	filePath := "./tmp/" + uploadID
+	os.MkdirAll(path.Dir(filePath), 0744)
+	// 创建分块文件
+	fileHandler, err := os.Create(filePath)
 	if err != nil {
 		w.Write([]byte("Upload part failed."))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,7 +110,7 @@ func CompleteUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
 }
 
-// TODO: 通知上传合并
+// 通知上传合并
 func UploadCombineHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
 	r.ParseForm()
@@ -134,8 +143,27 @@ func UploadCombineHandler(w http.ResponseWriter, r *http.Request) {
 	// 如果文件已经存在，只需要更新 tbl_user_file
 	username := r.Form.Get("username")
 	filehash := r.Form.Get("filehash")
-	filesize := r.Form.Get("filesize")
+	filesize, _ := strconv.Atoi(r.Form.Get("filesize"))
 	filename := r.Form.Get("filename")
+
+	// 更新 tbl_file
+	db.FileUploadFinished(filehash, filename, int64(filesize), "")
+	// 更新 tbl_user_file
+	u := orm.UserFile{
+		UserName:   sql.NullString{String: username, Valid: true}, // sql.NullString{String: username, Valid: true
+		FileSha1:   sql.NullString{String: filehash, Valid: true},
+		FileName:   sql.NullString{String: filename, Valid: true},
+		FileSize:   sql.NullInt64{Int64: int64(filesize), Valid: true},
+		Status:     sql.NullInt32{Int32: 0, Valid: true},
+		UploadAt:   sql.NullTime{Time: time.Now(), Valid: true},
+		LastUpdate: sql.NullTime{Time: time.Now(), Valid: true},
+	}
+	db.Upload2UserFileDB(&u)
+
+	w.Write([]byte("Upload combine success"))
+	w.WriteHeader(http.StatusOK)
+	// 重定向到home	页面，user会看到自己上传的文件
+	http.Redirect(w, r, "/user/info", http.StatusFound)
 
 }
 
