@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -60,14 +61,39 @@ func InitUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 // 对应的router /file/mpupload/uppart
 func UploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
-	// 2. 读取用户上传的分块
 
 	r.ParseForm()
+	uploadID := r.Form.Get("uploadid")
+	chunkIndex := r.Form.Get("index")
 
 	// 获取redis链接
-	// 获取文件handle, 用于存储分块内容
+	redisClient := redis.NewRedisClient()
+	defer redis.CloseRedisClient()
+
+	fileHandler, err := os.Create("./tmp/" + uploadID + "/" + chunkIndex)
+	if err != nil {
+		w.Write([]byte("Upload part failed."))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Upload part failed: ", err)
+		return
+	}
+	defer fileHandler.Close()
+
+	// 将分块文件写入到本地, 并且从请求体中读取分块内容
+	buffersize := 1024 * 1024
+	buffer := make([]byte, buffersize)
+	for {
+		// TODO: 写入分块到文件的时候，需要判断这个分块的hash是否和用户上传的hash一致
+		n, err := r.Body.Read(buffer)
+		fileHandler.Write(buffer[:n])
+		if err != nil {
+			break
+		}
+	}
+
 	// 更新redis缓存中的分块信息
-	// 返回处理结果给客户端
+	redisClient.SAdd("MP_"+uploadID+"_chunks", chunkIndex)
+
 }
 
 // TODO: 上传完成
@@ -78,30 +104,48 @@ func CompleteUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 // TODO: 通知上传合并
 func UploadCombineHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
-	// 获取redis链接
-	// 判断是否所有分块都上传完成
-	// 合并分块
-	// 更新 tbl_file 表
-	// 更新 tbl_user_file 表
-	// 删除redis缓存中的分块信息
-	// 返回处理结果给客户端
+	r.ParseForm()
+	uploadID := r.Form.Get("uploadid")
+
+	redisClient := redis.NewRedisClient()
+
+	// 2. 通过uploadid查询redis缓存，判断分块是否全部上传完成
+	data, err := redisClient.MGet("MP_"+uploadID+"_chunkcount", "MP_"+uploadID+"_chunks").Result()
+	if err != nil {
+		w.Write([]byte("Upload combine failed"))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Upload combine failed: ", err)
+		return
+	}
+
+	// 3. 判断分块是否全部上传完成
+	totalCount, _ := strconv.Atoi(data[0].(string)) // 分块总数
+	completeCount := len(data[1].([]interface{}))   // 已经上传的分块数量
+	if totalCount != completeCount {
+		w.Write([]byte("Upload combine failed"))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Upload combine failed: ", err)
+		return
+	}
+
+	// TODO: 合并分块
+
+	// 更新tbl_file and tbl_user_file
+	// 如果文件已经存在，只需要更新 tbl_user_file
+	username := r.Form.Get("username")
+	filehash := r.Form.Get("filehash")
+	filesize := r.Form.Get("filesize")
+	filename := r.Form.Get("filename")
+
 }
 
 // TODO: 取消上传
 func CancelUploadHandler(w http.ResponseWriter, r *http.Request) {
-	// 删除已经存在的分块
-	// 删除redis缓存中的分块信息
-	// 获取redis链接
-	// 删除redis缓存中的分块信息
-	// 返回处理结果给客户端
+
 }
 
 // TODO: 查询分块上传的状态
 // 对应的router /file/mpupload/status
 func QueryUploadStatusHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. 解析用户请求
-	// 2. 读取用户上传的分块
-	// 获取redis链接
-	// 获取redis缓存中的分块信息
-	// 返回处理结果给客户端
+
 }

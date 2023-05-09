@@ -235,24 +235,3 @@ func QueryUserFileMetas(w http.ResponseWriter, r *http.Request) {
 	// 根据username和limit查询用户文件表信息, 并且返回给客户端
 }
 
-// TODO: 实现文件的秒传, 从唯一文件表中查询相同的文件hash
-// 1. 如果查询不到记录，返回秒传失败, 需要客户端重新请求上传接口
-// 2. 如果查询到记录，返回成功响应，
-// FastUploadHandler : 实现文件的秒传
-func FastUploadHandler(w http.ResponseWriter, r *http.Request) {
-	// 解析请求参数
-	r.ParseForm()
-	username := r.Form.Get("username")
-	filehash := r.Form.Get("filehash")
-	filename := r.Form.Get("filename")
-	filesize := r.Form.Get("filesize")
-
-	fmt.Println("username: ", username, "filehash: ", filehash, "filename: ", filename, "filesize: ", filesize)
-
-	// 从 唯一文件表中查询相同的文件hash
-
-	// 如果查询不到记录，返回秒传失败, 需要客户端重新请求上传接口
-
-	// 如果查询到记录, 则将文件信息写入到用户文件表中
-
-}
