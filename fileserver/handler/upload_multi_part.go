@@ -24,7 +24,7 @@ type MultipartUploadInfo struct {
 	ChunkCount int    // 分块数量
 }
 
-// 实现初始化分块上传，并且返回分块上传的信息
+// 初始化分块上传，并且返回分块上传的信息
 // 对应的router /file/mpupload/init
 func InitUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
@@ -38,12 +38,17 @@ func InitUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 判断是否已经上传过，如果已经上传过，则直接触发秒传
+	if file, _ := db.GetFileMeta(filehash); file != nil {
+		// TODO: 重定向到秒传接口
+	}
+
 	// 2 connect to redis
 	redisClient := redis.NewRedisClient()
 	defer redisClient.Close()
 
 	// 3 初始化分块信息
-	chunksize := 5 * 1024 * 1024
+	chunksize := 5 * 1024 * 1024 // 默认分块大小为5MB
 	uploadInfo := &MultipartUploadInfo{
 		FileHash:   filehash,
 		FileSize:   filesize,
@@ -172,7 +177,7 @@ func CancelUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// TODO: 查询分块上传的状态
+// TODO: 查询分块上传的进度
 // 对应的router /file/mpupload/status
 func QueryUploadStatusHandler(w http.ResponseWriter, r *http.Request) {
 
