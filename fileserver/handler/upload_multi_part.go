@@ -40,7 +40,8 @@ func InitUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 判断是否已经上传过，如果已经上传过，则直接触发秒传
 	if file, _ := db.GetFileMeta(filehash); file != nil {
-		// TODO: 重定向到秒传接口
+		FastUploadHandler(w, r)
+		return
 	}
 
 	// 2 connect to redis
@@ -66,8 +67,7 @@ func InitUploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-//	执行分块上传
-//
+// UploadMultiPartHandler 执行分块上传
 // 对应的router /file/mpupload/uppart
 func UploadMultiPartHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. 解析用户请求
