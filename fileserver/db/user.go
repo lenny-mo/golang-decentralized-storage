@@ -7,12 +7,12 @@ import (
 	"fmt"
 )
 
-// UserSignUp sign up a user and insert into table
-// 这个包谷
+// UserSignUp sign up a user and insert into table tbl_user
 func UserSignUp(username, password, email string) bool {
 	// use prepare statement to avoid sql injection, and use ignore to avoid duplicate
 	// only prevents insertion of rows that would cause a duplicate key value in a unique index or primary key
-	stmt, err := mysql.GetDBConnection().Prepare("insert ignore into tbl_user (`user_name`, `user_pwd`, `email`)" +
+	// 已经删除user_name的unique key 约束
+	stmt, err := mysql.GetDBConnection().Prepare("insert into tbl_user (`user_name`, `user_pwd`, `email`)" +
 		" values (?, ?, ?)")
 	if err != nil {
 		fmt.Println("Failed to prepare statement, err: " + err.Error())
@@ -26,6 +26,7 @@ func UserSignUp(username, password, email string) bool {
 		fmt.Println("Failed to exec statement, err: " + err.Error())
 		return false
 	}
+
 	// check if the user has been signed up before
 	// if the user signed up before, the rows affected should be 0
 	if rf, err := res.RowsAffected(); err == nil {

@@ -35,7 +35,7 @@ func init() {
 		// force the program to exit
 		os.Exit(1)
 	} else {
-		fmt.Println("Successfully ping to mysql")
+		fmt.Println("Successfully ping to master mysql")
 	}
 }
 
