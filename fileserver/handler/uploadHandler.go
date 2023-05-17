@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// UploadHandler: 处理文件上传
+// UploadHandler: 处理文件上传, 如果文件大于100MB, 触发分块上传
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		data, err := os.ReadFile("./static/view/index.html") // 读取整个文件内容
@@ -234,4 +234,3 @@ func QueryUserFileMetas(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("username: ", username, "limit: ", limit)
 	// 根据username和limit查询用户文件表信息, 并且返回给客户端
 }
-
