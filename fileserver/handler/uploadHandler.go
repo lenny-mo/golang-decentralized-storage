@@ -53,13 +53,11 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		// 创建本地文件 接受上传的文件流
 		newfile, err := os.Create(filemeta.Location)
-
 		if err != nil {
 			// (HTTP 500)，表明发生了内部服务器错误，服务端创建文件失败
 			http.Error(w, "Failed to create file", http.StatusInternalServerError)
 			return
 		}
-
 		defer newfile.Close()
 
 		// filesize 复制的字节数，已传输文件的大小
@@ -72,12 +70,22 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		// 将文件指针从文件开头移动到 0 字节，也就是将文件位置重置为文件的开头。
 		newfile.Seek(0, 0)
-		filemeta.FileSha1 = util.FileSha1(newfile)
+		// 创建一个用于计算文件sha1值的channel，缓冲为零
+		sha1Chan := make(chan string)
+		go func() {
+			// 计算文件的sha1值
+			sha1Chan <- util.FileSha1(newfile)
+		}()
+
+		// 从channel中读取sha1值
+		filemeta.FileSha1 = <-sha1Chan
 		fmt.Println("filemeta.FileSha1: ", filemeta.FileSha1)
 		// update filemeta
 		meta.UpdateFileMeta(&filemeta)
 		// update filemeta into tbl_file database
-		_ = meta.UpdateFileMetaDB(&filemeta)
+		go func() {
+			_ = meta.UpdateFileMetaDB(&filemeta)
+		}()
 
 		// get the user and file info to update tbl_user_file
 		s := session.GetSessionUser(r)
@@ -89,7 +97,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		u.FileSize = sql.NullInt64{Int64: filemeta.FileSize, Valid: true}
 
 		// 上传文件的同时，更新该用户的 tbl_user_file，用户每次上传文件都会更新该表，不管文件是否重复
-		_ = db.Upload2UserFileDB(u)
+		go func() {
+			_ = db.Upload2UserFileDB(u)
+		}()
 
 		// 重定向到用户的home页面
 		http.Redirect(w, r, "/user/info", http.StatusFound)
