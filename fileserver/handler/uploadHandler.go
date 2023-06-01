@@ -8,6 +8,7 @@ import (
 	"fileserver/fileserver/meta"
 	"fileserver/fileserver/orm"
 	"fileserver/fileserver/session"
+	"fileserver/fileserver/storage/minio"
 	"fileserver/fileserver/util"
 	"fmt"
 	"io"
@@ -60,7 +61,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer newfile.Close()
 
-		// filesize 复制的字节数，已传输文件的大小
+		// 存储到本地文件
 		filemeta.FileSize, err = io.Copy(newfile, file)
 		if err != nil {
 			fmt.Printf("Fail to save data into file, err:%s\n", err.Error())
@@ -68,20 +69,34 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// 创建一个goroutine, 把文件上传minio
+		go func() {
+			// XXX: update the content-type and bucket name
+			ok := minio.UploadFileToMinio(filemeta.FileName, filemeta.Location, "application/pdf", "first-bucket")
+			if !ok {
+				fmt.Printf("Fail to upload file to minio, err:%s\n", err.Error())
+				http.Error(w, "Fail to upload file to minio", http.StatusInternalServerError)
+				return
+			}
+		}()
+
 		// 将文件指针从文件开头移动到 0 字节，也就是将文件位置重置为文件的开头。
 		newfile.Seek(0, 0)
 		// 创建一个用于计算文件sha1值的channel，缓冲为零
 		sha1Chan := make(chan string)
+
+		// 计算文件的sha1值
 		go func() {
-			// 计算文件的sha1值
 			sha1Chan <- util.FileSha1(newfile)
 		}()
 
-		// 从channel中读取sha1值
+		// 阻塞等待，从channel中读取sha1值
 		filemeta.FileSha1 = <-sha1Chan
 		fmt.Println("filemeta.FileSha1: ", filemeta.FileSha1)
+
 		// update filemeta
 		meta.UpdateFileMeta(&filemeta)
+
 		// update filemeta into tbl_file database
 		go func() {
 			_ = meta.UpdateFileMetaDB(&filemeta)
