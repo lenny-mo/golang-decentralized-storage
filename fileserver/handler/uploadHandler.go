@@ -5,16 +5,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fileserver/fileserver/db"
+	"fileserver/fileserver/db/minio"
 	"fileserver/fileserver/meta"
 	"fileserver/fileserver/orm"
 	"fileserver/fileserver/session"
-	"fileserver/fileserver/storage/minio"
 	"fileserver/fileserver/util"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -69,8 +70,12 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var wg sync.WaitGroup // 创建一个同步等待的组
+
 		// 创建一个goroutine, 把文件上传minio
-		go func() {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
 			// XXX: update the content-type and bucket name
 			ok := minio.UploadFileToMinio(filemeta.FileName, filemeta.Location, "application/pdf", "first-bucket")
 			if !ok {
@@ -78,31 +83,31 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Fail to upload file to minio", http.StatusInternalServerError)
 				return
 			}
-		}()
+		}(&wg)
 
 		// 将文件指针从文件开头移动到 0 字节，也就是将文件位置重置为文件的开头。
 		newfile.Seek(0, 0)
-		// 创建一个用于计算文件sha1值的channel，缓冲为零
-		sha1Chan := make(chan string)
 
 		// 计算文件的sha1值
-		go func() {
-			sha1Chan <- util.FileSha1(newfile)
-		}()
-
-		// 阻塞等待，从channel中读取sha1值
-		filemeta.FileSha1 = <-sha1Chan
+		filemeta.FileSha1 = util.FileSha1(newfile)
 		fmt.Println("filemeta.FileSha1: ", filemeta.FileSha1)
 
-		// update filemeta
-		meta.UpdateFileMeta(&filemeta)
+		// update filemeta into map
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			meta.UpdateFileMeta(&filemeta)
+		}(&wg)
 
 		// update filemeta into tbl_file database
-		go func() {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
 			_ = meta.UpdateFileMetaDB(&filemeta)
-		}()
+			fmt.Println("this")
+		}(&wg)
 
-		// get the user and file info to update tbl_user_file
+		// get the user and file info
 		s := session.GetSessionUser(r)
 		username := s.Username
 
@@ -112,11 +117,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		u.FileSize = sql.NullInt64{Int64: filemeta.FileSize, Valid: true}
 
 		// 上传文件的同时，更新该用户的 tbl_user_file，用户每次上传文件都会更新该表，不管文件是否重复
-		go func() {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
 			_ = db.Upload2UserFileDB(u)
-		}()
+		}(&wg)
 
-		// 重定向到用户的home页面
+		wg.Wait() // 等待所有的goroutine执行完毕, 再重定向到用户的home页面
 		http.Redirect(w, r, "/user/info", http.StatusFound)
 	}
 }
